@@ -522,51 +522,6 @@ UNIT_ELEMENTS.forEach(({ els }) => {
   });
 });
 
-function pollFlashJob(jobId) {
-  const POLL_INTERVAL_MS = 300;
-
-  return new Promise((resolve, reject) => {
-    const poll = async () => {
-      let response;
-      try {
-        response = await fetch(`/api/flash/status/${jobId}`);
-      } catch (error) {
-        reject(error);
-        return;
-      }
-
-      let payload;
-      try {
-        payload = await response.json();
-      } catch (error) {
-        reject(new Error('Unable to read flash status from the server.'));
-        return;
-      }
-
-      if (!response.ok) {
-        reject(new Error(payload.error || 'Unable to retrieve flash status.'));
-        return;
-      }
-
-      setFlashProgress(payload.stage || 'Working', payload.percent || 0);
-
-      if (payload.status === 'success') {
-        resolve(payload);
-        return;
-      }
-
-      if (payload.status === 'failed') {
-        reject(new Error(payload.error || 'Flash failed.'));
-        return;
-      }
-
-      setTimeout(poll, POLL_INTERVAL_MS);
-    };
-
-    poll();
-  });
-}
-
 flashButton.addEventListener('click', async () => {
   clearError();
   const isValid = validateForm();
@@ -589,25 +544,26 @@ flashButton.addEventListener('click', async () => {
   });
 
   try {
-    const startResponse = await fetch('/api/flash', {
+    const response = await fetch('/api/flash', {
       method: 'POST',
       body: formData,
     });
 
-    const contentType = startResponse.headers.get('content-type') || '';
-    let startPayload = null;
+    const contentType = response.headers.get('content-type') || '';
+    let payload = null;
     if (contentType.includes('application/json')) {
-      startPayload = await startResponse.json();
+      payload = await response.json();
     } else {
-      startPayload = { success: false, error: await startResponse.text() };
+      payload = { success: false, error: await response.text() };
     }
 
-    if (!startResponse.ok || !startPayload.success) {
-      const backendError = startPayload && startPayload.error ? startPayload.error : 'Flash failed.';
+    if (!response.ok || !payload.success) {
+      setFlashProgress(payload.stage || 'Preparing', payload.percent || 0);
+      const backendError = payload && payload.error ? payload.error : 'Flash failed.';
       throw new Error(backendError);
     }
 
-    await pollFlashJob(startPayload.job_id);
+    setFlashProgress(payload.stage || 'Completed', payload.percent || 100);
 
     const elapsedMs = Date.now() - flashStartTime;
     showTotalTime(elapsedMs, false);

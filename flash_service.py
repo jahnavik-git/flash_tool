@@ -38,8 +38,8 @@ class ConcreteFlashProgrammer(FlashProgrammer):
         return self.driver.flash(file_path, source_address, destination_address)
 
 
-def flash_firmware(core_config, progress_callback=None):
-    """Flash the firmware described by core_config.
+def flash_firmware(core_config):
+    """Flash the firmware described by core_config, synchronously, in one call.
 
     core_config shape:
         {
@@ -52,13 +52,11 @@ def flash_firmware(core_config, progress_callback=None):
           },
         }
 
-    progress_callback(stage_label, percent) is invoked before each real step so
-    the caller can surface genuine backend progress (never simulated timing).
+    Runs to completion within a single request/response (no background thread,
+    no in-memory job store) so it works on stateless serverless platforms.
+    Always returns a result dict rather than raising, recording the stage and
+    percent reached so the caller can still show where a failure happened.
     """
-
-    def report(stage, percent):
-        if progress_callback:
-            progress_callback(stage, percent)
 
     programmer = ConcreteFlashProgrammer()
     results = {"core0": {}, "core1": {}}
@@ -66,37 +64,47 @@ def flash_firmware(core_config, progress_callback=None):
     core0 = core_config.get("core0", {})
     core1 = core_config.get("core1", {})
 
-    report("Preparing", 0)
-    report("Connecting to J-Link", 10)
-    report("Erasing", 20)
+    stage, percent = "Preparing", 0
+    try:
+        stage, percent = "Connecting to J-Link", 10
+        stage, percent = "Erasing", 20
 
-    ssbl = core0.get("ssbl")
-    if ssbl:
-        report("Flashing Core 0 SSBL", 35)
-        results["core0"]["ssbl"] = programmer.flash(ssbl["file"], ssbl["start_address"], ssbl["end_address"])
-        report("Verifying Core 0 SSBL", 45)
+        ssbl = core0.get("ssbl")
+        if ssbl:
+            stage, percent = "Flashing Core 0 SSBL", 35
+            results["core0"]["ssbl"] = programmer.flash(ssbl["file"], ssbl["start_address"], ssbl["end_address"])
+            stage, percent = "Verifying Core 0 SSBL", 45
 
-    core0_application = core0.get("application")
-    if core0_application:
-        report("Flashing Core 0 Application", 60)
-        results["core0"]["application"] = programmer.flash(
-            core0_application["file"], core0_application["start_address"], core0_application["end_address"]
-        )
-        report("Verifying Core 0 Application", 70)
+        core0_application = core0.get("application")
+        if core0_application:
+            stage, percent = "Flashing Core 0 Application", 60
+            results["core0"]["application"] = programmer.flash(
+                core0_application["file"], core0_application["start_address"], core0_application["end_address"]
+            )
+            stage, percent = "Verifying Core 0 Application", 70
 
-    core1_application = core1.get("application")
-    if core1_application:
-        report("Flashing Core 1 Application", 85)
-        results["core1"]["application"] = programmer.flash(
-            core1_application["file"], core1_application["start_address"], core1_application["end_address"]
-        )
-        report("Verifying Core 1 Application", 95)
+        core1_application = core1.get("application")
+        if core1_application:
+            stage, percent = "Flashing Core 1 Application", 85
+            results["core1"]["application"] = programmer.flash(
+                core1_application["file"], core1_application["start_address"], core1_application["end_address"]
+            )
+            stage, percent = "Verifying Core 1 Application", 95
 
-    report("Completed", 100)
+        stage, percent = "Completed", 100
 
-    return {
-        "status": "success",
-        "mode": "Hardware Mode",
-        "details": results,
-        "message": "Flash completed successfully.",
-    }
+        return {
+            "status": "success",
+            "stage": stage,
+            "percent": percent,
+            "mode": "Hardware Mode",
+            "details": results,
+            "message": "Flash completed successfully.",
+        }
+    except Exception as exc:
+        return {
+            "status": "failed",
+            "stage": stage,
+            "percent": percent,
+            "error": str(exc),
+        }
