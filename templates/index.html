@@ -7,163 +7,77 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   </head>
   <body>
+    {% macro firmware_unit(prefix, label) %}
+    <h3 class="unit-title">{{ label }}</h3>
+
+    <div class="field-row address-row">
+      <div class="field-group compact-field">
+        <div class="inline-field">
+          <label for="{{ prefix }}SourceAddress">Starting Address</label>
+          <input id="{{ prefix }}SourceAddress" name="{{ prefix }}_source_address" type="text" placeholder="0x0000" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text" />
+        </div>
+        <div id="{{ prefix }}SourceError" class="error-message" aria-live="polite"></div>
+      </div>
+
+      <div class="field-group compact-field">
+        <div class="inline-field">
+          <label for="{{ prefix }}DestinationAddress">Ending Address</label>
+          <input id="{{ prefix }}DestinationAddress" name="{{ prefix }}_destination_address" type="text" placeholder="0x0FFF" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text" />
+        </div>
+        <div id="{{ prefix }}DestinationError" class="error-message" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="field-row upload-row">
+      <div class="field-group compact-field">
+        <div class="inline-field path-inline-field">
+          <label for="{{ prefix }}FilePath">File Path</label>
+          <div class="path-input-wrap" id="{{ prefix }}FileWrap">
+            <input id="{{ prefix }}FilePath" type="text" class="path-display" placeholder="Accepted files: .bin, .hex, .out" readonly />
+            <button type="button" class="path-button" data-file-input="{{ prefix }}File" aria-label="Browse {{ label }} file">...</button>
+            <button type="button" class="path-view-button" data-view-file="{{ prefix }}File" aria-label="View {{ label }} file">View</button>
+            <input id="{{ prefix }}File" type="file" class="hidden-file-input" />
+          </div>
+        </div>
+        <div id="{{ prefix }}FileError" class="error-message" aria-live="polite"></div>
+      </div>
+    </div>
+    {% endmacro %}
+
     <div class="app-shell">
-      <header class="page-header">
-        <div class="brand-row" aria-label="Azimuth AI">
-          <h1 class="brand-title">Azimuth AI</h1>
+      <header class="page-header" aria-label="Firmware flash utility header">
+        <div class="brand-row" aria-label="Azimuth AI brand">
+          <span class="brand-title">Azimuth AI</span>
         </div>
-        <div class="header-subtitle" aria-label="Firmware Flash Configuration Tool">
-          <span class="header-rule">────</span>
-          <span class="subtitle-text"> Flash  Tool</span>
-          <span class="header-rule">────</span>
-        </div>
+        <h1 class="utility-title">FLASHING UTILITY</h1>
       </header>
 
-      <main class="panel-grid">
-        <div class="flash-config">
-          <section class="config-panel">
-            <div class="panel-header">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1.5"></rect><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"></path></svg>
-              <h2>SSBL </h2>
-            </div>
-            <div class="panel-body">
-              <div class="field-group">
-                <label for="ssblFile">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
-                  SSBL
-                </label>
-                <div class="file-input-wrap">
-                  <label for="ssblFile" class="choose-file-btn">Load path</label>
-                  <input id="ssblFile" type="file" accept=".bin,.hex,.elf" required />
-                  <span id="ssblFileName" class="file-name">No file selected</span>
-                  <span class="check-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#16A34A"></circle><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                  </span>
-                </div>
-                <small>Accepted formats: .bin, .hex, .elf.</small>
-              </div>
-
-              <div class="two-col">
-                <div class="field-group">
-                  <label for="ssblSourceAddress">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                     Source Address
-                  </label>
-                  <div class="address-input-wrap">
-                    <input id="ssblSourceAddress" type="text" placeholder="0x08000000" value="0x08000000" required />
-                    <span class="check-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#16A34A"></circle><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    </span>
-                  </div>
-                </div>
-                <div class="field-group">
-                  <label for="ssblDestinationAddress">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                    Destination Address
-                  </label>
-                  <div class="address-input-wrap">
-                    <input id="ssblDestinationAddress" type="text" placeholder="0x08000000" value="0x08000000" required />
-                    <span class="check-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#16A34A"></circle><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+      <div class="workspace">
+        <main class="panel-grid">
+          <section class="config-panel core-panel">
+            <h2>CORE 0</h2>
+            {{ firmware_unit('core0Ssbl', 'SSBL') }}
+            {{ firmware_unit('core0Application', 'APPLICATION') }}
           </section>
 
-          <section class="config-panel">
-            <div class="panel-header">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-              <h2>Application </h2>
-            </div>
-            <div class="panel-body">
-              <div class="field-group">
-                <label for="applicationFile">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
-                  Application
-                </label>
-                <div class="file-input-wrap">
-                  <label for="applicationFile" class="choose-file-btn">load path</label>
-                  <input id="applicationFile" type="file" accept=".bin,.hex,.elf" required />
-                  <span id="applicationFileName" class="file-name">No file selected</span>
-                  <span class="check-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#16A34A"></circle><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                  </span>
-                </div>
-                <small>Accepted formats: .bin, .hex, .elf.</small>
-              </div>
-
-              <div class="two-col">
-                <div class="field-group">
-                  <label for="applicationSourceAddress">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                   Source Address
-                  </label>
-                  <div class="address-input-wrap">
-                    <input id="applicationSourceAddress" type="text" placeholder="0x08010000" value="0x08010000" required />
-                    <span class="check-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#16A34A"></circle><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    </span>
-                  </div>
-                </div>
-                <div class="field-group">
-                  <label for="applicationDestinationAddress">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                   Destination Address
-                  </label>
-                  <div class="address-input-wrap">
-                    <input id="applicationDestinationAddress" type="text" placeholder="0x08010000" value="0x08010000" required />
-                    <span class="check-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#16A34A"></circle><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <section class="config-panel core-panel">
+            <h2>CORE 1</h2>
+            {{ firmware_unit('core1Application', 'APPLICATION') }}
           </section>
-        </div>
 
-        <div class="button-row">
-          <button id="flashButton" class="flash-button" type="button">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 3 14h7l-1 8 11-14h-7l1-6z"></path></svg>
-            FLASH
-          </button>
-        </div>
-
-        <section class="summary-panel hidden">
-          <h3>Flash Configuration Summary</h3>
-          <div id="summary" class="summary-content">
-            <p><strong>SSBL:</strong></p>
-            <p>File: None</p>
-            <p>Source: 0x08000000</p>
-            <p>Destination: 0x08000000</p>
-            <p><strong>Application:</strong></p>
-            <p>File: None</p>
-            <p>Source: 0x08010000</p>
-            <p>Destination: 0x08010000</p>
-          </div>
-        </section>
-
-        <section class="status-panel">
-          <div class="panel-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-            <h3>Flash Status</h3>
-          </div>
-          <div class="panel-body">
-            <div class="status-text-row">
-              <div id="statusText" class="status-text">Ready to flash</div>
-              <span class="mode-badge">Simulation Mode</span>
+          <div class="button-row">
+            <button id="flashButton" class="flash-button" type="button">FLASH</button>
+            <div id="flashProgressBar" class="flash-progress-bar hidden" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Flashing progress">
+              <div id="flashProgressFill" class="flash-progress-fill">
+                <span id="flashProgressTextFill" class="flash-progress-text flash-progress-text-fill"></span>
+              </div>
+              <span id="flashProgressTextBase" class="flash-progress-text flash-progress-text-base"></span>
             </div>
-            <div class="progress-label">Flash Progress</div>
-            <div class="progress-bar">
-              <div id="progressFill" class="progress-fill" style="width: 0%"></div>
-            </div>
-            <div id="progressPercent" class="progress-percent">0%</div>
-            <div id="errorBox" class="error-box hidden" role="alert"></div>
+            <span id="flashTotalTime" class="flash-total-time hidden"></span>
           </div>
-        </section>
-      </main>
+        </main>
+      </div>
+
     </div>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>

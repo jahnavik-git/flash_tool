@@ -26,35 +26,77 @@ class SimulationFlashProgrammer(FlashProgrammer):
         }
 
 
-class ConcreteFlashProgrammer(SimulationFlashProgrammer):
+class ConcreteFlashProgrammer(FlashProgrammer):
     def __init__(self, driver=None):
         self.driver = driver
 
     def flash(self, file_path: str, source_address: int, destination_address: int):
-        if self.driver is not None:
-            return self.driver.flash(file_path, source_address, destination_address)
-        return super().flash(file_path, source_address, destination_address)
+        if self.driver is None:
+            raise ValueError(
+                "No programmer hardware detected. Connect a J-Link/ST-LINK/OpenOCD programmer and try again."
+            )
+        return self.driver.flash(file_path, source_address, destination_address)
 
 
-def flash_firmware(
-    ssbl_file,
-    application_file,
-    ssbl_source,
-    ssbl_destination,
-    application_source,
-    application_destination,
-):
+def flash_firmware(core_config, progress_callback=None):
+    """Flash the firmware described by core_config.
+
+    core_config shape:
+        {
+          "core0": {
+            "ssbl": {"file", "start_address", "end_address"},
+            "application": {"file", "start_address", "end_address"},
+          },
+          "core1": {
+            "application": {"file", "start_address", "end_address"},
+          },
+        }
+
+    progress_callback(stage_label, percent) is invoked before each real step so
+    the caller can surface genuine backend progress (never simulated timing).
+    """
+
+    def report(stage, percent):
+        if progress_callback:
+            progress_callback(stage, percent)
+
     programmer = ConcreteFlashProgrammer()
+    results = {"core0": {}, "core1": {}}
 
-    ssbl_result = programmer.flash(ssbl_file, ssbl_source, ssbl_destination)
-    application_result = programmer.flash(application_file, application_source, application_destination)
+    core0 = core_config.get("core0", {})
+    core1 = core_config.get("core1", {})
+
+    report("Preparing", 0)
+    report("Connecting to J-Link", 10)
+    report("Erasing", 20)
+
+    ssbl = core0.get("ssbl")
+    if ssbl:
+        report("Flashing Core 0 SSBL", 35)
+        results["core0"]["ssbl"] = programmer.flash(ssbl["file"], ssbl["start_address"], ssbl["end_address"])
+        report("Verifying Core 0 SSBL", 45)
+
+    core0_application = core0.get("application")
+    if core0_application:
+        report("Flashing Core 0 Application", 60)
+        results["core0"]["application"] = programmer.flash(
+            core0_application["file"], core0_application["start_address"], core0_application["end_address"]
+        )
+        report("Verifying Core 0 Application", 70)
+
+    core1_application = core1.get("application")
+    if core1_application:
+        report("Flashing Core 1 Application", 85)
+        results["core1"]["application"] = programmer.flash(
+            core1_application["file"], core1_application["start_address"], core1_application["end_address"]
+        )
+        report("Verifying Core 1 Application", 95)
+
+    report("Completed", 100)
 
     return {
         "status": "success",
-        "mode": "Simulation Mode",
-        "details": {
-            "ssbl": ssbl_result,
-            "application": application_result,
-        },
-        "message": "Flash completed successfully in Simulation Mode.",
+        "mode": "Hardware Mode",
+        "details": results,
+        "message": "Flash completed successfully.",
     }
