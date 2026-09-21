@@ -41,6 +41,7 @@ const MAX_ADDRESS_VALUE = 0x0FFF;
 const HEX_ADDRESS_PATTERN = /^0x[0-9A-Fa-f]+$/i;
 const INVALID_HEX_ADDRESS_MESSAGE = 'Invalid hexadecimal address.';
 const ADDRESS_RANGE_MESSAGE = 'Address must be within the 4 KB range (0x0000 - 0x0FFF).';
+const ADDRESS_ORDER_MESSAGE = 'Ending Address must be greater than or equal to Starting Address.';
 
 function showError(message) {
   if (!errorBox) {
@@ -108,7 +109,8 @@ function getFilteredRecentAddresses(inputValue) {
   return recent.filter((value) => value.toLowerCase().includes(query));
 }
 
-function updateRecentAddressSuggestions(input, errorElement, isEnding) {
+function updateRecentAddressSuggestions(els, isEnding) {
+  const input = isEnding ? els.destination : els.source;
   const field = input && input.closest('.compact-field');
   if (!field) {
     return;
@@ -149,7 +151,7 @@ function updateRecentAddressSuggestions(input, errorElement, isEnding) {
     button.addEventListener('click', () => {
       input.value = button.dataset.value || '';
       panel.classList.add('hidden');
-      validateAddressField(input, errorElement, isEnding);
+      validateAddressPair(els);
       updateSummary();
       input.focus();
     });
@@ -373,26 +375,33 @@ function validateFileSelection(fileInput, requiredText, errorElement, wrapper, p
   return true;
 }
 
-function validateAddressField(input, errorElement, isEnding = false) {
-  const message = validateAddress(input.value, isEnding);
-  if (input) {
-    input.classList.toggle('input-error', Boolean(message));
+function validateAddressPair(els) {
+  const sourceMessage = validateAddress(els.source.value, false);
+  let destinationMessage = validateAddress(els.destination.value, true);
+
+  if (!sourceMessage && !destinationMessage) {
+    const sourceValue = parseInt(els.source.value.trim().replace(/^0x/i, ''), 16);
+    const destinationValue = parseInt(els.destination.value.trim().replace(/^0x/i, ''), 16);
+    if (sourceValue > destinationValue) {
+      destinationMessage = ADDRESS_ORDER_MESSAGE;
+    }
   }
-  if (errorElement) {
-    errorElement.textContent = message;
-  }
+
+  els.source.classList.toggle('input-error', Boolean(sourceMessage));
+  els.sourceError.textContent = sourceMessage;
+
+  els.destination.classList.toggle('input-error', Boolean(destinationMessage));
+  els.destinationError.textContent = destinationMessage;
+
   updatePageScrollState();
-  return !message;
+  return !sourceMessage && !destinationMessage;
 }
 
 function validateForm() {
   let isValid = true;
 
   UNIT_ELEMENTS.forEach(({ unit, els }) => {
-    if (!validateAddressField(els.source, els.sourceError, false)) {
-      isValid = false;
-    }
-    if (!validateAddressField(els.destination, els.destinationError, true)) {
+    if (!validateAddressPair(els)) {
       isValid = false;
     }
     if (!validateFileSelection(els.fileInput, `${unit.label} file is required`, els.fileError, els.fileWrap, els.filePath)) {
@@ -449,7 +458,9 @@ function openSelectedFile(fileInputId) {
   window.open(fileUrl, '_blank');
 }
 
-function bindAddressInput(input, errorElement, isEnding = false) {
+function bindAddressInput(els, isEnding) {
+  const input = isEnding ? els.destination : els.source;
+  const errorElement = isEnding ? els.destinationError : els.sourceError;
   if (!input) {
     return;
   }
@@ -457,17 +468,17 @@ function bindAddressInput(input, errorElement, isEnding = false) {
   input.setAttribute('autocomplete', 'off');
 
   input.addEventListener('focus', () => {
-    updateRecentAddressSuggestions(input, errorElement, isEnding);
+    updateRecentAddressSuggestions(els, isEnding);
   });
 
   input.addEventListener('click', () => {
-    updateRecentAddressSuggestions(input, errorElement, isEnding);
+    updateRecentAddressSuggestions(els, isEnding);
   });
 
   input.addEventListener('input', () => {
-    validateAddressField(input, errorElement, isEnding);
+    validateAddressPair(els);
     updateSummary();
-    updateRecentAddressSuggestions(input, errorElement, isEnding);
+    updateRecentAddressSuggestions(els, isEnding);
   });
 
   input.addEventListener('blur', () => {
@@ -486,8 +497,8 @@ function bindAddressInput(input, errorElement, isEnding = false) {
 }
 
 UNIT_ELEMENTS.forEach(({ els }) => {
-  bindAddressInput(els.source, els.sourceError, false);
-  bindAddressInput(els.destination, els.destinationError, true);
+  bindAddressInput(els, false);
+  bindAddressInput(els, true);
 
   els.fileInput.addEventListener('change', () => updateFileDisplay(els));
 });

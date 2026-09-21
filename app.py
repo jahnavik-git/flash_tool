@@ -6,7 +6,7 @@ from flask import Flask, jsonify, render_template, request
 from werkzeug.utils import secure_filename
 
 from flash_service import flash_firmware
-from validators import MAX_UPLOAD_SIZE, validate_file_upload, validate_hex_address
+from validators import MAX_UPLOAD_SIZE, validate_address_order, validate_file_upload, validate_hex_address
 
 
 app = Flask(__name__)
@@ -53,6 +53,7 @@ def api_flash():
             destination_address = validate_hex_address(
                 request.form.get(f"{form_prefix}_destination_address", ""), f"{display_name} destination address"
             )
+            validate_address_order(source_address, destination_address, display_name)
 
             filename = f"{uuid.uuid4().hex}_{secure_filename(file_path)}"
             upload_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)

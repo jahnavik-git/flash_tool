@@ -11,6 +11,7 @@ MIN_ADDRESS = 0x0000
 MAX_ADDRESS = 0x0FFF
 INVALID_HEX_ADDRESS_MESSAGE = "Invalid hexadecimal address."
 ADDRESS_RANGE_MESSAGE = "Address must be within the 4 KB range (0x0000 - 0x0FFF)."
+ADDRESS_ORDER_MESSAGE = "Ending Address must be greater than or equal to Starting Address."
 
 
 def validate_hex_address(value: str, field_name: str) -> int:
@@ -30,6 +31,11 @@ def validate_hex_address(value: str, field_name: str) -> int:
         raise ValueError(f"{field_name}: {ADDRESS_RANGE_MESSAGE}")
 
     return address
+
+
+def validate_address_order(start_address: int, end_address: int, field_name: str) -> None:
+    if start_address > end_address:
+        raise ValueError(f"{field_name}: {ADDRESS_ORDER_MESSAGE}")
 
 
 def validate_file_upload(file: IO, field_name: str, max_size_bytes: int = MAX_UPLOAD_SIZE) -> str:
