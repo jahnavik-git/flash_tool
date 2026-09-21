@@ -7,7 +7,6 @@ const flashProgressFill = document.getElementById('flashProgressFill');
 const flashProgressTextBase = document.getElementById('flashProgressTextBase');
 const flashProgressTextFill = document.getElementById('flashProgressTextFill');
 const flashTotalTime = document.getElementById('flashTotalTime');
-const crcResult = document.getElementById('crcResult');
 
 const FIRMWARE_UNITS = [
   { prefix: 'core0Ssbl', formPrefix: 'core0_ssbl', label: 'Core 0 SSBL' },
@@ -300,56 +299,6 @@ function showTotalTime(elapsedMs, failed) {
   flashTotalTime.classList.remove('hidden');
 }
 
-let crcResultBlobUrl = null;
-
-function clearCrcResult() {
-  if (!crcResult) {
-    return;
-  }
-  if (crcResultBlobUrl) {
-    URL.revokeObjectURL(crcResultBlobUrl);
-    crcResultBlobUrl = null;
-  }
-  crcResult.textContent = '';
-  crcResult.innerHTML = '';
-  crcResult.classList.add('hidden');
-  crcResult.classList.remove('flash-crc-result-failed');
-}
-
-function showCrcSuccess(filename, content) {
-  if (!crcResult) {
-    return;
-  }
-  if (crcResultBlobUrl) {
-    URL.revokeObjectURL(crcResultBlobUrl);
-  }
-  const blob = new Blob([content], { type: 'text/plain' });
-  crcResultBlobUrl = URL.createObjectURL(blob);
-
-  crcResult.classList.remove('flash-crc-result-failed');
-  crcResult.classList.remove('hidden');
-  crcResult.textContent = 'CRC Result: ';
-
-  const openLink = document.createElement('button');
-  openLink.type = 'button';
-  openLink.className = 'flash-crc-open-link';
-  openLink.textContent = 'Open File';
-  openLink.setAttribute('aria-label', `Open ${filename}`);
-  openLink.addEventListener('click', () => {
-    window.open(crcResultBlobUrl, '_blank');
-  });
-  crcResult.appendChild(openLink);
-}
-
-function showCrcFailed(message) {
-  if (!crcResult) {
-    return;
-  }
-  crcResult.classList.add('flash-crc-result-failed');
-  crcResult.classList.remove('hidden');
-  crcResult.textContent = message;
-}
-
 function updatePageScrollState() {
   const hasValidationErrors = [...document.querySelectorAll('.error-message')].some((element) => element.textContent.trim().length > 0);
   document.body.classList.toggle('validation-errors', hasValidationErrors);
@@ -593,7 +542,6 @@ flashButton.addEventListener('click', async () => {
 
   flashButton.disabled = true;
   clearTotalTime();
-  clearCrcResult();
   const flashStartTime = Date.now();
   await showFlashProgress();
   startLiveTimer(flashStartTime);
@@ -627,12 +575,6 @@ flashButton.addEventListener('click', async () => {
     }
 
     setFlashProgress(payload.stage || 'Completed', payload.percent || 100);
-
-    if (payload.crc && payload.crc.status === 'success') {
-      showCrcSuccess(payload.crc.filename, payload.crc.content);
-    } else if (payload.crc && payload.crc.status === 'failed') {
-      showCrcFailed(payload.crc.error || 'CRC calculation failed.');
-    }
 
     const elapsedMs = Date.now() - flashStartTime;
     showTotalTime(elapsedMs, false);
