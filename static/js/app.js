@@ -592,4 +592,140 @@ flashButton.addEventListener('click', async () => {
   }
 });
 
+// --- Core 0 SSBL CRC calculation ---
+// Deliberately independent of the FLASH button/handler above: its own
+// button, its own endpoint (/api/calculate-crc), its own state. It must
+// never trigger flashing and flashing must never trigger it.
+
+function buildCrcResultNode({ startAddress, endAddress, crcHex, outputFilename }, onOpenOutput) {
+  const container = document.createElement('div');
+
+  const addRow = (label, valueNode) => {
+    const row = document.createElement('div');
+    row.className = 'crc-result-line';
+    const labelEl = document.createElement('span');
+    labelEl.className = 'crc-result-label';
+    labelEl.textContent = label;
+    row.appendChild(labelEl);
+    if (typeof valueNode === 'string') {
+      row.appendChild(document.createTextNode(valueNode));
+    } else {
+      row.appendChild(valueNode);
+    }
+    container.appendChild(row);
+  };
+
+  const formatAddress = (value) => `0x${value.toString(16).toUpperCase().padStart(4, '0')}`;
+
+  addRow('Start Address:', formatAddress(startAddress));
+  addRow('End Address:', formatAddress(endAddress));
+  addRow('CRC:', crcHex);
+
+  const outputLink = document.createElement('button');
+  outputLink.type = 'button';
+  outputLink.className = 'crc-output-link';
+  outputLink.textContent = outputFilename;
+  outputLink.addEventListener('click', onOpenOutput);
+  addRow('Output:', outputLink);
+
+  return container;
+}
+
+(function initCore0SsblCrc() {
+  const unitEntry = UNIT_ELEMENTS.find(({ unit }) => unit.prefix === 'core0Ssbl');
+  const crcButton = document.getElementById('core0SsblCalculateCrcButton');
+  const crcErrorEl = document.getElementById('core0SsblCrcError');
+  const crcResultEl = document.getElementById('core0SsblCrcResult');
+
+  if (!unitEntry || !crcButton || !crcErrorEl || !crcResultEl) {
+    return;
+  }
+
+  const { els } = unitEntry;
+  let outputBlobUrl = null;
+
+  function clearCrcState() {
+    crcErrorEl.textContent = '';
+    crcResultEl.innerHTML = '';
+    crcResultEl.classList.add('hidden');
+    if (outputBlobUrl) {
+      URL.revokeObjectURL(outputBlobUrl);
+      outputBlobUrl = null;
+    }
+  }
+
+  crcButton.addEventListener('click', async () => {
+    clearCrcState();
+
+    const addressValid = validateAddressPair(els);
+    const fileValid = validateFileSelection(
+      els.fileInput,
+      'SSBL file is required',
+      els.fileError,
+      els.fileWrap,
+      els.filePath
+    );
+
+    if (!addressValid || !fileValid) {
+      return;
+    }
+
+    crcButton.disabled = true;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', els.fileInput.files[0]);
+      formData.append('start_address', els.source.value.trim());
+      formData.append('end_address', els.destination.value.trim());
+
+      const response = await fetch('/api/calculate-crc', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const contentType = response.headers.get('content-type') || '';
+      const payload = contentType.includes('application/json')
+        ? await response.json()
+        : { success: false, error: await response.text() };
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || 'CRC calculation failed.');
+      }
+
+      const binary = atob(payload.output_base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: payload.output_content_type || 'application/octet-stream' });
+      outputBlobUrl = URL.createObjectURL(blob);
+
+      const resultNode = buildCrcResultNode(
+        {
+          startAddress: payload.start_address,
+          endAddress: payload.end_address,
+          crcHex: payload.crc_hex,
+          outputFilename: payload.output_filename,
+        },
+        () => {
+          const link = document.createElement('a');
+          link.href = outputBlobUrl;
+          link.download = payload.output_filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      );
+
+      crcResultEl.innerHTML = '';
+      crcResultEl.appendChild(resultNode);
+      crcResultEl.classList.remove('hidden');
+    } catch (error) {
+      crcErrorEl.textContent = error.message || 'CRC calculation failed.';
+    } finally {
+      crcButton.disabled = false;
+    }
+  });
+})();
+
 updateSummary();

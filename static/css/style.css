@@ -365,6 +365,79 @@ input[type='text']:focus {
   background: #1F1F29;
 }
 
+.crc-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(124, 77, 255, 0.22);
+}
+
+.crc-button {
+  appearance: none;
+  border: 1px solid rgba(124, 77, 255, 0.35);
+  background: #17171F;
+  color: #B9A6FF;
+  border-radius: 4px;
+  height: 34px;
+  padding: 0 18px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.crc-button:hover:not(:disabled) {
+  background: #1F1F29;
+}
+
+.crc-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.crc-error.error-message {
+  margin-left: 0;
+  text-align: right;
+  width: 100%;
+}
+
+.crc-result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 12px;
+  color: #E4E4EC;
+}
+
+.crc-result-line {
+  white-space: nowrap;
+}
+
+.crc-result-label {
+  color: #9C96B8;
+  margin-right: 6px;
+}
+
+.crc-output-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: #B9A6FF;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.crc-output-link:hover {
+  color: #FFFFFF;
+}
+
 .button-row {
   display: flex;
   align-items: center;

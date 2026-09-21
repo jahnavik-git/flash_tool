@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   </head>
   <body>
-    {% macro firmware_unit(prefix, label) %}
+    {% macro firmware_unit(prefix, label, show_crc=False) %}
     <h3 class="unit-title">{{ label }}</h3>
 
     <div class="field-row address-row">
@@ -42,6 +42,14 @@
         <div id="{{ prefix }}FileError" class="error-message" aria-live="polite"></div>
       </div>
     </div>
+
+    {% if show_crc %}
+    <div class="crc-row">
+      <button type="button" id="{{ prefix }}CalculateCrcButton" class="crc-button">Calculate CRC</button>
+      <div id="{{ prefix }}CrcError" class="error-message crc-error" aria-live="polite"></div>
+      <div id="{{ prefix }}CrcResult" class="crc-result hidden" aria-live="polite"></div>
+    </div>
+    {% endif %}
     {% endmacro %}
 
     <div class="app-shell">
@@ -56,7 +64,7 @@
         <main class="panel-grid">
           <section class="config-panel core-panel">
             <h2>CORE 0</h2>
-            {{ firmware_unit('core0Ssbl', 'SSBL') }}
+            {{ firmware_unit('core0Ssbl', 'SSBL', show_crc=True) }}
             {{ firmware_unit('core0Application', 'APPLICATION') }}
           </section>
 
