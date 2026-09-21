@@ -7,11 +7,11 @@ ALLOWED_EXTENSIONS = {"bin", "hex", "out"}
 INVALID_FIRMWARE_MESSAGE = "Invalid file uploaded. Only .bin, .hex, and .out firmware files are allowed."
 MAX_UPLOAD_SIZE = 16 * 1024 * 1024
 
-MIN_ADDRESS = 0x0000
-MAX_ADDRESS = 0x0FFF
+MIN_ADDRESS = 0x000000
+MAX_ADDRESS = 0x3FFFFF
 INVALID_HEX_ADDRESS_MESSAGE = "Invalid hexadecimal address."
-ADDRESS_RANGE_MESSAGE = "Address must be within the 4 KB range (0x0000 - 0x0FFF)."
-ADDRESS_ORDER_MESSAGE = "Ending Address must be greater than or equal to Starting Address."
+ADDRESS_RANGE_MESSAGE = "Address must be within the range (0x000000 - 0x3FFFFF)."
+ADDRESS_ORDER_MESSAGE = "Starting Address must be less than or equal to Ending Address."
 
 
 def validate_hex_address(value: str, field_name: str) -> int:

@@ -19,13 +19,14 @@ Ethernet, and PNG). Parameters, in the common "Rocksoft model" form:
                           verified below as a self-test, not invented)
 
 IMPORTANT - logical offsets vs. absolute addresses:
-The UI's Starting/Ending Address fields (0x0000-0x0FFF) are always a LOGICAL
-4 KB offset range into "the firmware image", never an absolute MCU address.
-Intel HEX files, on the other hand, carry real absolute addresses (e.g. an
-SSBL linked at 0x10000000), via Extended Linear/Segment Address records. So
-for .hex inputs this module first parses the file into an absolute address
-map, finds the firmware image's base address from the data itself (see
-_find_firmware_region), and only then treats "0x0000" as "byte 0 of that
+The UI's Starting/Ending Address fields (0x000000-0x3FFFFF, see
+validators.MIN_ADDRESS/MAX_ADDRESS) are always a LOGICAL offset range into
+"the firmware image", never an absolute MCU address. Intel HEX files, on
+the other hand, carry real absolute addresses (e.g. an SSBL linked at
+0x10000000), via Extended Linear/Segment Address records. So for .hex
+inputs this module first parses the file into an absolute address map,
+finds the firmware image's base address from the data itself (see
+_find_firmware_region), and only then treats "0x000000" as "byte 0 of that
 image" - i.e. logical_offset = absolute_address - firmware_base_address.
 .bin/.out files have no addressing metadata at all, so for them the file's
 own byte 0 is defined to be Starting Address (unchanged from before).
@@ -40,7 +41,7 @@ looks valid but is wrong for the real target. So CRC *calculation* and CRC
 calculate_crc()'s return value (and shown in the UI / API response), while
 the output file itself is an unmodified, re-encoded copy of the exact bytes
 that were hashed (using real absolute addressing for .hex, so it stays a
-valid, reloadable Intel HEX file - not the logical 0x0000-based offsets).
+valid, reloadable Intel HEX file - not the logical 0x000000-based offsets).
 """
 
 import os
@@ -131,7 +132,7 @@ def _read_bin_range(file_path: str, start_address: int, end_address: int) -> byt
         raw = handle.read()
 
     if len(raw) < range_size:
-        raise FirmwareParseError("No firmware data found within the selected 4 KB range.")
+        raise FirmwareParseError("No firmware data found within the selected address range.")
 
     return raw[:range_size]
 
@@ -200,9 +201,9 @@ def _find_firmware_region(memory: Dict[int, int]) -> int:
     represented by an Intel HEX address map.
 
     Intel HEX addresses are absolute MCU addresses (e.g. 0x10000000), while
-    the UI's Starting/Ending Address fields are logical offsets (0x0000-
-    0x0FFF) into that image - they must never be compared to `memory`'s keys
-    directly. A HEX file could in principle contain more than one disjoint
+    the UI's Starting/Ending Address fields are logical offsets (0x000000-
+    0x3FFFFF) into that image - they must never be compared to `memory`'s
+    keys directly. A HEX file could in principle contain more than one disjoint
     address block (e.g. a small config/vector block plus the main firmware
     body); since this project does not define which one is "the" SSBL
     firmware region, this picks the LARGEST contiguous run of addresses as
@@ -211,7 +212,7 @@ def _find_firmware_region(memory: Dict[int, int]) -> int:
     single-purpose HEX file like an SSBL image.
     """
     if not memory:
-        raise FirmwareParseError("No firmware data found within the selected 4 KB range.")
+        raise FirmwareParseError("No firmware data found within the selected address range.")
 
     sorted_addresses = sorted(memory)
     runs: List[Tuple[int, int]] = []
@@ -243,7 +244,7 @@ def _read_hex_range(file_path: str, start_address: int, end_address: int) -> Tup
         if (base_address + offset) not in memory
     ]
     if missing:
-        raise FirmwareParseError("No firmware data found within the selected 4 KB range.")
+        raise FirmwareParseError("No firmware data found within the selected address range.")
 
     data = bytes(memory[base_address + offset] for offset in range(start_address, end_address + 1))
     return data, base_address
@@ -296,7 +297,7 @@ def calculate_crc(
     algorithm: CrcAlgorithm = DEFAULT_ALGORITHM,
 ) -> dict:
     """Calculate the CRC of the firmware bytes in the logical offset range
-    [start_address, end_address] (always 0x0000-0x0FFF per the UI's 4 KB
+    [start_address, end_address] (always 0x000000-0x3FFFFF per the UI's
     range validation - see the module docstring for how that maps onto an
     Intel HEX file's real absolute addresses).
 
@@ -305,7 +306,7 @@ def calculate_crc(
     any problem - callers must not treat a raised exception as "calculated".
     """
     if start_address > end_address:
-        raise ValueError("Starting Address cannot be greater than Ending Address.")
+        raise ValueError("Starting Address must be less than or equal to Ending Address.")
 
     file_type = os.path.splitext(file_path)[1][1:].lower()
 
@@ -320,7 +321,7 @@ def calculate_crc(
 
     expected_size = end_address - start_address + 1
     if len(data) != expected_size:
-        raise FirmwareParseError("No firmware data found within the selected 4 KB range.")
+        raise FirmwareParseError("No firmware data found within the selected address range.")
 
     crc_value = compute_crc(data, algorithm)
     output_bytes = build_output_file(file_type, data, absolute_start_address)

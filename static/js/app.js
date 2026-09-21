@@ -36,12 +36,12 @@ const VALID_FIRMWARE_MESSAGE = 'Valid file accepted (.bin, .hex, .out).';
 const RECENT_ADDRESSES_KEY = 'azimuth_flash_recent_addresses';
 const MAX_RECENT_ADDRESSES = 8;
 
-const MIN_ADDRESS_VALUE = 0x0000;
-const MAX_ADDRESS_VALUE = 0x0FFF;
+const MIN_ADDRESS_VALUE = 0x000000;
+const MAX_ADDRESS_VALUE = 0x3FFFFF;
 const HEX_ADDRESS_PATTERN = /^0x[0-9A-Fa-f]+$/i;
 const INVALID_HEX_ADDRESS_MESSAGE = 'Invalid hexadecimal address.';
-const ADDRESS_RANGE_MESSAGE = 'Address must be within the 4 KB range (0x0000 - 0x0FFF).';
-const ADDRESS_ORDER_MESSAGE = 'Ending Address must be greater than or equal to Starting Address.';
+const ADDRESS_RANGE_MESSAGE = 'Address must be within the range (0x000000 - 0x3FFFFF).';
+const ADDRESS_ORDER_MESSAGE = 'Starting Address must be less than or equal to Ending Address.';
 
 function showError(message) {
   if (!errorBox) {
@@ -615,7 +615,7 @@ function buildCrcResultNode({ startAddress, endAddress, crcHex, outputFilename }
     container.appendChild(row);
   };
 
-  const formatAddress = (value) => `0x${value.toString(16).toUpperCase().padStart(4, '0')}`;
+  const formatAddress = (value) => `0x${value.toString(16).toUpperCase().padStart(6, '0')}`;
 
   addRow('Start Address:', formatAddress(startAddress));
   addRow('End Address:', formatAddress(endAddress));
