@@ -66,32 +66,32 @@ def flash_firmware(core_config):
 
     stage, percent = "Preparing", 0
     try:
-        stage, percent = "Connecting to J-Link", 10
-        stage, percent = "Erasing", 20
+        stage, percent = "Connecting to J-Link", 8
+        stage, percent = "Erasing", 15
 
         ssbl = core0.get("ssbl")
         if ssbl:
-            stage, percent = "Flashing Core 0 SSBL", 35
+            stage, percent = "Flashing Core 0 SSBL", 25
             results["core0"]["ssbl"] = programmer.flash(ssbl["file"], ssbl["start_address"], ssbl["end_address"])
-            stage, percent = "Verifying Core 0 SSBL", 45
+            stage, percent = "Verifying Core 0 SSBL", 35
 
         core0_application = core0.get("application")
         if core0_application:
-            stage, percent = "Flashing Core 0 Application", 60
+            stage, percent = "Flashing Core 0 Application", 45
             results["core0"]["application"] = programmer.flash(
                 core0_application["file"], core0_application["start_address"], core0_application["end_address"]
             )
-            stage, percent = "Verifying Core 0 Application", 70
+            stage, percent = "Verifying Core 0 Application", 55
 
         core1_application = core1.get("application")
         if core1_application:
-            stage, percent = "Flashing Core 1 Application", 85
+            stage, percent = "Flashing Core 1 Application", 70
             results["core1"]["application"] = programmer.flash(
                 core1_application["file"], core1_application["start_address"], core1_application["end_address"]
             )
-            stage, percent = "Verifying Core 1 Application", 95
+            stage, percent = "Verifying Core 1 Application", 80
 
-        stage, percent = "Completed", 100
+        stage, percent = "Reset/finalize", 88
 
         return {
             "status": "success",

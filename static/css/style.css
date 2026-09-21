@@ -414,6 +414,33 @@ input[type='text']:focus {
   color: var(--danger);
 }
 
+.flash-crc-result {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #E4E4EC;
+}
+
+.flash-crc-result.flash-crc-result-failed {
+  color: var(--danger);
+}
+
+.flash-crc-open-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 4px;
+  font: inherit;
+  font-weight: 700;
+  color: #B9A6FF;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.flash-crc-open-link:hover {
+  color: #FFFFFF;
+}
+
 .flash-progress-bar {
   position: relative;
   width: 480px;
